@@ -134,6 +134,18 @@ app.get("/borrows", verifyToken, async (req, res) => {
   res.json(await req.db.collection("borrows").find({ userEmail: req.user.email }).sort({ borrowDate: -1 }).toArray());
 });
 
+// 8. Return a book
+app.delete("/borrows/:id", verifyToken, async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ message: "Invalid borrow id" });
+  const borrows = req.db.collection("borrows");
+  const borrow = await borrows.findOne({ _id: new ObjectId(req.params.id), userEmail: req.user.email });
+  if (!borrow) return res.status(404).json({ message: "Borrow record not found" });
+  await borrows.deleteOne({ _id: borrow._id });
+  await req.db.collection("books").updateOne({ _id: new ObjectId(borrow.bookId) }, { $inc: { availableCopies: 1 } });
+  res.json({ message: "Book returned" });
+});
+
+app.use((err, _req, res, _next) => res.status(500).json({ message: err.message || "Something went wrong" }));
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
