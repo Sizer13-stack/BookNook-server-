@@ -52,6 +52,23 @@ app.get("/books", async (req, res) => {
   res.json(await cursor.toArray());
 });
 
+// 2. One book
+app.get("/books/:id", async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ message: "Invalid book id" });
+  const book = await req.db.collection("books").findOne({ _id: new ObjectId(req.params.id) });
+  if (!book) return res.status(404).json({ message: "Book not found" });
+  res.json(book);
+});
+
+function cleanBook(b) {
+  const copies = Number(b.totalCopies);
+  if (!b.title?.trim() || !b.author?.trim() || !b.description?.trim() || !b.image)
+    return { error: "Please fill in every field" };
+  if (!CATEGORIES.includes(b.category)) return { error: "Choose a valid category" };
+  if (!Number.isInteger(copies) || copies < 1) return { error: "Total copies must be at least 1" };
+  return { data: { title: b.title.trim(), author: b.author.trim(), category: b.category, image: b.image, description: b.description.trim(), totalCopies: copies } };
+}
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
