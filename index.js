@@ -104,6 +104,31 @@ app.delete("/books/:id", verifyToken, async (req, res) => {
   res.json({ message: "Book deleted" });
 });
 
+// 6. Borrow a book (7 days)
+app.post("/borrows", verifyToken, async (req, res) => {
+  const { bookId } = req.body;
+  if (!validId(bookId)) return res.status(400).json({ message: "Invalid book id" });
+  const books = req.db.collection("books");
+  const book = await books.findOne({ _id: new ObjectId(bookId) });
+  if (!book) return res.status(404).json({ message: "Book not found" });
+
+  const borrowDate = new Date();
+  const returnDate = new Date(borrowDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const borrow = { bookId, bookTitle: book.title, bookImage: book.image, userEmail: req.user.email, borrowDate, returnDate };
+  try {
+    await req.db.collection("borrows").insertOne(borrow); // unique index blocks double borrow
+  } catch (e) {
+    if (e.code === 11000) return res.status(409).json({ message: "You have already borrowed this book" });
+    throw e;
+  }
+  const updated = await books.updateOne({ _id: book._id, availableCopies: { $gt: 0 } }, { $inc: { availableCopies: -1 } });
+  if (!updated.modifiedCount) {
+    await req.db.collection("borrows").deleteOne({ bookId, userEmail: req.user.email });
+    return res.status(409).json({ message: "No copies of this book are available right now" });
+  }
+  res.status(201).json({ message: "Book borrowed" });
+});
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
