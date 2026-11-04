@@ -92,6 +92,18 @@ app.patch("/books/:id", verifyToken, async (req, res) => {
   res.json({ message: "Book updated" });
 });
 
+// 5. Delete a book (owner only)
+app.delete("/books/:id", verifyToken, async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ message: "Invalid book id" });
+  const books = req.db.collection("books");
+  const book = await books.findOne({ _id: new ObjectId(req.params.id) });
+  if (!book) return res.status(404).json({ message: "Book not found" });
+  if (book.addedBy.email !== req.user.email) return res.status(403).json({ message: "You can only delete your own books" });
+  await books.deleteOne({ _id: book._id });
+  await req.db.collection("borrows").deleteMany({ bookId: String(book._id) });
+  res.json({ message: "Book deleted" });
+});
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
