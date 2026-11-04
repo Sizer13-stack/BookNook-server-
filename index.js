@@ -69,6 +69,15 @@ function cleanBook(b) {
   return { data: { title: b.title.trim(), author: b.author.trim(), category: b.category, image: b.image, description: b.description.trim(), totalCopies: copies } };
 }
 
+// 3. Add a book
+app.post("/books", verifyToken, async (req, res) => {
+  const { data, error } = cleanBook(req.body);
+  if (error) return res.status(400).json({ message: error });
+  const doc = { ...data, availableCopies: data.totalCopies, addedBy: req.user, createdAt: new Date() };
+  const result = await req.db.collection("books").insertOne(doc);
+  res.status(201).json({ ...doc, _id: result.insertedId });
+});
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
