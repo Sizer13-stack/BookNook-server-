@@ -43,6 +43,15 @@ const CATEGORIES = ["Fiction", "Science", "History", "Kids", "Others"];
 
 app.get("/", (_req, res) => res.json({ message: "BookNook API is running" }));
 
+// 1. All books (public). ?limit=6 returns the newest first
+app.get("/books", async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 0, 100);
+  const filter = req.query.email ? { "addedBy.email": req.query.email } : {};
+  let cursor = req.db.collection("books").find(filter).sort({ createdAt: -1 });
+  if (limit) cursor = cursor.limit(limit);
+  res.json(await cursor.toArray());
+});
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
