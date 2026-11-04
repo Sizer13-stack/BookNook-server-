@@ -78,6 +78,20 @@ app.post("/books", verifyToken, async (req, res) => {
   res.status(201).json({ ...doc, _id: result.insertedId });
 });
 
+// 4. Update a book (owner only)
+app.patch("/books/:id", verifyToken, async (req, res) => {
+  if (!validId(req.params.id)) return res.status(400).json({ message: "Invalid book id" });
+  const books = req.db.collection("books");
+  const book = await books.findOne({ _id: new ObjectId(req.params.id) });
+  if (!book) return res.status(404).json({ message: "Book not found" });
+  if (book.addedBy.email !== req.user.email) return res.status(403).json({ message: "You can only edit your own books" });
+  const { data, error } = cleanBook(req.body);
+  if (error) return res.status(400).json({ message: error });
+  const available = Math.max(0, book.availableCopies + (data.totalCopies - book.totalCopies));
+  await books.updateOne({ _id: book._id }, { $set: { ...data, availableCopies: available } });
+  res.json({ message: "Book updated" });
+});
+
 
 if (!process.env.VERCEL) app.listen(process.env.PORT || 5000, () => console.log("BookNook API running"));
 export default app;
