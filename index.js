@@ -5,7 +5,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL }));
+app.use(cors());
 app.use(express.json());
 
 // Cached connection (works locally and on serverless hosts)
@@ -20,12 +20,19 @@ const getDb = () =>
   })());
 
 app.use(async (req, res, next) => {
-  try { req.db = await getDb(); next(); }
-    catch (e) { dbPromise = null; console.error(e); res.status(500).json({ message: "Could not reach the database: " + e.message }); }
+  try {
+    req.db = await getDb();
+    next();
+  } catch (e) {
+    dbPromise = null;
+    console.error(e);
+    res.status(500).json({ message: "Could not reach the database: " + e.message });
+  }
 });
 
 // JWT issued by BetterAuth (jwt plugin), verified against the client app's JWKS
-const jwks = createRemoteJWKSet(new URL(`${process.env.CLIENT_URL}/api/auth/jwks`));
+const clientUrl = (process.env.CLIENT_URL || "").trim().replace(/\/$/, "");
+const jwks = createRemoteJWKSet(new URL(`${clientUrl}/api/auth/jwks`));
 async function verifyToken(req, res, next) {
   const header = req.headers.authorization || "";
   if (!header.startsWith("Bearer ")) return res.status(401).json({ message: "Please log in to continue" });
