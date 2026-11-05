@@ -21,7 +21,7 @@ const getDb = () =>
 
 app.use(async (req, res, next) => {
   try { req.db = await getDb(); next(); }
-  catch { dbPromise = null; res.status(500).json({ message: "Could not reach the database" }); }
+    catch (e) { dbPromise = null; console.error(e); res.status(500).json({ message: "Could not reach the database: " + e.message }); }
 });
 
 // JWT issued by BetterAuth (jwt plugin), verified against the client app's JWKS
