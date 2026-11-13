@@ -1,21 +1,19 @@
-# BookNook
+# BookNook Server
 
-A small online library: add a book, borrow a book, return a book.
+Express + MongoDB API for BookNook.
 
 **Live site:** https://book-nook-client-tau.vercel.app/
 
 **Client repo:** https://github.com/Sizer13-stack/BookNook-client-
 **Server repo:** https://github.com/Sizer13-stack/BookNook-server-
 
-## Features
+## Highlights
 
-- Email/password and Google login with BetterAuth and the MongoDB adapter, with redirect back to the page you wanted
-- Swiper hero, newest-first New Arrivals, and category browsing
-- Add, edit and delete your own books, with cover upload to imgbb and a confirm modal
-- Borrow for 7 days, return any time, with live copy counts and "Not Available" at zero
-- One active borrow per book per reader, JWT-protected API
-- Light and dark theme, responsive layout, per-page titles
+- 8 routes: `GET/POST /books`, `GET/PATCH/DELETE /books/:id`, `POST/GET /borrows`, `DELETE /borrows/:id`
+- JWT verification (BetterAuth tokens checked against the client's JWKS)
+- Atomic copy counting with `$inc`, unique index blocks double borrowing
+- Owner-only edit and delete
 
 ## Setup
 
-Copy `.env.example` to `.env.local`, then run `npm i && npm run dev`.
+Copy `.env.example` to `.env`, run `npm i && npm run dev`. Deploy to Vercel (`vercel.json` included) and set the same env vars.
